@@ -1,0 +1,179 @@
+# Protocol for Reproducible Python Environment Management in Posit
+
+This protocol provides a standardized approach for creating and managing reproducible Python environments in Posit Workbench for deployment to Posit Connect. It leverages UV for faster package installation while maintaining compatibility with Posit Connect's deployment workflow.
+
+## Environment Setup (for all new projects)
+
+### 1. Create a Virtual Environment
+
+In your project directory, create a Python virtual environment:
+
+```bash
+# Navigate to your project directory
+cd ~/your-project-directory
+
+# Create a virtual environment named .venv
+python -m venv .venv
+
+# Activate the virtual environment
+source .venv/bin/activate
+```
+
+Notes:
+- The `.venv` name is a convention recognized by many tools including VS Code
+- Each project has its own isolated `.venv` directory, so using the same name across projects is not a problem
+
+### 2. Install UV in the Virtual Environment
+
+Install UV within your activated environment for faster package management:
+
+```bash
+# With virtual environment activated
+pip install uv
+```
+### 3. Install Required Packages Using UV
+
+Use UV to install your project dependencies:
+
+```bash
+# Use uv pip install syntax (for UV version 0.6.8)
+uv pip install pandas matplotlib seaborn python-dotenv
+
+# For version-specific dependencies
+uv pip install databricks-connect==15.4.*
+```
+
+Notes:
+- UV is significantly faster than standard pip, especially for complex packages
+- For python module development consider use of a TOML file 
+
+### 4. Generate requirements.txt
+
+Create a requirements.txt file to ensure reproducibility:
+
+```bash
+# Generate a requirements.txt file with exact versions
+uv pip freeze > requirements.txt
+```
+
+This file will be used by Posit Connect during deployment to recreate your environment.
+
+## Quick Start (for users of this repo who want to try things out)
+
+### 1. Create and activate your virtual enviroment
+
+After cloning this repository, you won't yet be able to run the package install test immediately because you don't have a virtual environment set up yet. Follow these steps in your terminal to reproduce the environment from the requirements.txt file that ships with the repository and see your packages installed. 
+
+```bash
+# Create and activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate
+
+# Install UV
+pip install uv
+
+# Install dependencies from requirements.txt
+uv pip install -r requirements.txt
+
+```
+
+### 2. Test Installation of packages
+
+run the python script `test_package_imports.py` to verify your environment:
+
+```bash
+workbench/python/test_package_imports.py
+```
+
+### 3. Test Environment Reproducibility:
+
+Modify the environment reproducibility bash program to be executable and then execute it:
+
+```bash
+chmod +x workbench/python/environment_reproducibility_test.sh
+
+workbench/python/environment_reproducibility_test.sh
+```
+# More Notes For All Users:
+
+## Version Control Setup
+
+### 1. Create .gitignore
+
+Create a `.gitignore` file to exclude environment files and secrets:
+
+```
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Environment variables and secrets
+.env
+.Renviron
+*.env
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# IDE files
+.vscode/
+.idea/
+
+# Generated files
+*.log
+*.png
+*.csv
+*.xlsx
+```
+
+
+## Notes on Deploying to Posit Connect
+
+Posit Connect uses the requirements.txt file to recreate your environment during deployment:
+
+1. Ensure your `requirements.txt` file is included in your project
+2. Use the Posit Workbench "Publish" button or rsconnect-python to deploy
+3. Posit Connect will automatically install packages from requirements.txt
+4. Environment variables must be set in Posit Connect's UI under the Settings tab
+
+## Best Practices
+
+1. **Use Virtual Environments**: Always isolate project dependencies
+2. **Version Pin Dependencies**: Ensure reproducibility with exact versions
+3. **Document Environment Variables**: Use a `.Renviron.example` or `.env.example` file
+4. **Keep Requirements Updated**: Regenerate requirements.txt after adding packages
+5. **Test Before Deployment**: Verify environment reproducibility before deploying
+6. **Share the Protocol**: Ensure team members follow the same workflow
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Package Conflicts**: If you encounter package conflicts, create a fresh environment
+2. **UV Command Not Found**: Ensure UV is installed in the active environment
+3. **Import Errors**: Check package names in import statements (e.g., `python-dotenv` is imported as `dotenv`)
+4. **Environment Variables**: Ensure environment variables are set correctly in Posit Connect
+
+### UV-Specific Notes
+
+1. UV version 0.6.8 requires the longer `uv pip install` syntax
+2. UV still provides significant performance benefits compared to standard pip
+3. A requirements.txt file generated by UV works normally with Posit Connect
+
+## Notes on Path and Environment
+
+- UV is installed within each virtual environment and doesn't require PATH modifications
+- Each project should have its own isolated environment
+- Posit Connect expects a requirements.txt file for dependency management
